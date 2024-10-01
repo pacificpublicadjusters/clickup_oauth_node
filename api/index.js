@@ -176,9 +176,4 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-/*
-
-- refresh access token dynamically as needed
-
-*/
 module.exports = app;
