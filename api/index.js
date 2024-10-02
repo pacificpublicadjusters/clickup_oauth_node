@@ -228,6 +228,11 @@ const formatDate = (dateString) => {
   });
 };
 
+// Root route
+app.get("/", (req, res) => {
+  res.send("Welcome to the ClickUp OAuth Node.js app!");
+});
+
 // OAuth endpoint to start the authorization process
 app.get("/auth", (req, res) => {
   const clickupAuthUrl = `https://app.clickup.com/api?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}`;
