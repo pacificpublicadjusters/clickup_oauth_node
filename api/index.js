@@ -14,6 +14,52 @@ const REDIRECT_URI = process.env.REDIRECT_URI;
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 const LIST_ID = process.env.LIST_ID || "901105262068"; // Fallback list ID
 
+// Helper function for making HTTPS requests
+const makeApiRequest = (options, postData = null) => {
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let data = "";
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => {
+        try {
+          const parsedData = JSON.parse(data);
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            reject(
+              new Error(
+                `API responded with status ${res.statusCode}: ${
+                  parsedData.message || "Unknown error"
+                }`
+              )
+            );
+          } else {
+            resolve(parsedData);
+          }
+        } catch (err) {
+          reject(new Error("Failed to parse API response"));
+        }
+      });
+    });
+
+    req.on("error", (error) => reject(error));
+    if (postData) req.write(postData);
+    req.end();
+  });
+};
+
+// Helper function for formatting date
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short",
+  });
+};
+
+// Webhook endpoint to handle both voicemails and texts
 app.post("/webhook", async (req, res) => {
   const eventData = req.body;
   console.log("Incoming event data:", eventData);
@@ -54,7 +100,7 @@ app.post("/webhook", async (req, res) => {
       console.log("Task created for voicemail:", responseData);
       res.status(200).send("Webhook received and voicemail task created.");
     } catch (error) {
-      console.error(error);
+      console.error("Failed to create voicemail task:", error);
       res.status(500).send("Failed to create voicemail task.");
     }
   } else if (eventType === "message.received") {
@@ -96,14 +142,17 @@ app.post("/webhook", async (req, res) => {
       console.log("Task created for text message:", responseData);
       res.status(200).send("Webhook received and text message task created.");
     } catch (error) {
-      console.error(error);
+      console.error("Failed to create text message task:", error);
       res.status(500).send("Failed to create text message task.");
     }
   } else {
     // Ignore other event types for now
+    console.log(`Unhandled event type: ${eventType}`);
     res.status(200).send("Event type not handled.");
   }
 });
+
+module.exports = app;
 
 // const express = require("express");
 // const https = require("https");
