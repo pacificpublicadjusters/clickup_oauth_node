@@ -5,12 +5,13 @@
   "main": "api/index.js",
   "scripts": {
     "start": "node api/index.js",
-    "build": "echo 'No build step defined'" 
+    "build": "echo 'No build step defined'"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "date-fns-tz": "^3.2.0",
     "dotenv": "^16.4.5",
     "express": "^4.21.0"
   }

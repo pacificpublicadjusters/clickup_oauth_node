@@ -2,6 +2,7 @@ const express = require("express");
 const https = require("https");
 const querystring = require("querystring");
 const dotenv = require("dotenv");
+const { format, utcToZonedTime } = require("date-fns-tz");
 
 dotenv.config();
 const app = express();
@@ -12,8 +13,8 @@ const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI;
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
-const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105537156"; // Fallback list ID for texts
-const VOICEMAIL_LIST_ID = "901105262068"; // List ID for voicemails
+const LIST_ID_TEXT = process.env.LIST_ID_TEXT || "901105262068"; // Fallback list ID for texts
+const LIST_ID_VOICEMAIL = process.env.LIST_ID_VOICEMAIL || "901105537156"; // Fallback list ID for voicemails
 
 // Helper function for making HTTPS requests
 const makeApiRequest = (options, postData = null) => {
@@ -24,54 +25,93 @@ const makeApiRequest = (options, postData = null) => {
       res.on("end", () => {
         try {
           const parsedData = JSON.parse(data);
-          if (res.statusCode < 200 || res.statusCode >= 300) {
-            reject(
-              new Error(
-                `API responded with status ${res.statusCode}: ${
-                  parsedData.message || "Unknown error"
-                }`
-              )
-            );
-          } else {
-            resolve(parsedData);
-          }
+          resolve(parsedData);
         } catch (err) {
           reject(new Error("Failed to parse API response"));
         }
       });
     });
 
-    req.on("error", (error) => reject(error));
+    req.on("error", reject);
     if (postData) req.write(postData);
     req.end();
   });
 };
 
-// Helper function for formatting date to Pacific Time
-const formatDateToPacific = (dateString) => {
+// Function to format the date in Pacific Time
+const formatDate = (dateString) => {
   const utcDate = new Date(dateString);
-  // Convert UTC to Pacific Time (UTC-7 in summer, UTC-8 in winter)
-  const pacificOffset = -7; // Adjust this value if needed
-  const pacificDate = new Date(
-    utcDate.getTime() + pacificOffset * 60 * 60 * 1000
-  );
-  return pacificDate.toLocaleString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    timeZoneName: "short",
+  const pacificTimeZone = "America/Los_Angeles";
+  const pacificDate = utcToZonedTime(utcDate, pacificTimeZone);
+  return format(pacificDate, "yyyy-MM-dd HH:mm:ssXXX", {
+    timeZone: pacificTimeZone,
   });
 };
 
-// Root GET route to prevent 'Cannot GET /' error
+// Root route
 app.get("/", (req, res) => {
-  res.send("Server is running.");
+  res.send("Welcome to the ClickUp OAuth Node.js app!");
 });
 
-// Webhook endpoint to handle both voicemails and texts
+// OAuth endpoint to start the authorization process
+app.get("/auth", (req, res) => {
+  const clickupAuthUrl = `https://app.clickup.com/api?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}`;
+  res.redirect(clickupAuthUrl);
+});
+
+// OAuth Callback
+app.get("/oauth/callback", async (req, res) => {
+  const { code } = req.query;
+  const postData = querystring.stringify({
+    client_id: CLIENT_ID,
+    client_secret: CLIENT_SECRET,
+    code,
+    redirect_uri: REDIRECT_URI,
+  });
+
+  const options = {
+    hostname: "app.clickup.com",
+    path: "/api/v2/oauth/token",
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  };
+
+  try {
+    const tokenInfo = await makeApiRequest(options, postData);
+    if (tokenInfo.access_token) {
+      res.send(`Access token: ${tokenInfo.access_token}`);
+    } else {
+      res.status(400).send("Failed to obtain access token.");
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Something went wrong during OAuth.");
+  }
+});
+
+// Get tasks from ClickUp
+app.get("/tasks", async (req, res) => {
+  const options = {
+    hostname: "api.clickup.com",
+    path: `/api/v2/list/${LIST_ID_TEXT}/task`,
+    method: "GET",
+    headers: {
+      Authorization: ACCESS_TOKEN,
+    },
+  };
+
+  try {
+    const tasks = await makeApiRequest(options);
+    res.json(tasks);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Failed to fetch tasks.");
+  }
+});
+
+// Webhook to create a task in ClickUp
 app.post("/webhook", async (req, res) => {
   const eventData = req.body;
   console.log("Incoming event data:", eventData);
@@ -81,10 +121,9 @@ app.post("/webhook", async (req, res) => {
 
   // Determine if the event is a call or text
   if (eventType === "call.completed") {
-    // Process the completed call (voicemail or missed call)
     const callerNumber = eventDataObject.from;
     const numberDialed = eventDataObject.to;
-    const time = formatDateToPacific(eventDataObject.createdAt);
+    const time = formatDate(eventDataObject.createdAt);
     const body = eventDataObject.voicemail
       ? `Voicemail link: ${eventDataObject.voicemail.url}`
       : "No voicemail available.";
@@ -98,7 +137,7 @@ app.post("/webhook", async (req, res) => {
 
     const options = {
       hostname: "api.clickup.com",
-      path: `/api/v2/list/${VOICEMAIL_LIST_ID}/task`,
+      path: `/api/v2/list/${LIST_ID_VOICEMAIL}/task`,
       method: "POST",
       headers: {
         Authorization: ACCESS_TOKEN,
@@ -112,17 +151,15 @@ app.post("/webhook", async (req, res) => {
       console.log("Task created for voicemail:", responseData);
       res.status(200).send("Webhook received and voicemail task created.");
     } catch (error) {
-      console.error("Failed to create voicemail task:", error);
+      console.error(error);
       res.status(500).send("Failed to create voicemail task.");
     }
   } else if (eventType === "message.received") {
-    // Process the received text message
     const senderNumber = eventDataObject.from;
     const recipientNumber = eventDataObject.to;
-    const time = formatDateToPacific(eventDataObject.createdAt);
+    const time = formatDate(eventDataObject.createdAt);
     const messageContent = eventDataObject.body || "No message body.";
 
-    // If media is included, append links to it
     let mediaInfo = "";
     if (eventDataObject.media && eventDataObject.media.length > 0) {
       const mediaLinks = eventDataObject.media
@@ -140,7 +177,7 @@ app.post("/webhook", async (req, res) => {
 
     const options = {
       hostname: "api.clickup.com",
-      path: `/api/v2/list/${TEXT_LIST_ID}/task`,
+      path: `/api/v2/list/${LIST_ID_TEXT}/task`,
       method: "POST",
       headers: {
         Authorization: ACCESS_TOKEN,
@@ -154,12 +191,10 @@ app.post("/webhook", async (req, res) => {
       console.log("Task created for text message:", responseData);
       res.status(200).send("Webhook received and text message task created.");
     } catch (error) {
-      console.error("Failed to create text message task:", error);
+      console.error(error);
       res.status(500).send("Failed to create text message task.");
     }
   } else {
-    // Ignore other event types for now
-    console.log(`Unhandled event type: ${eventType}`);
     res.status(200).send("Event type not handled.");
   }
 });
@@ -180,8 +215,8 @@ module.exports = app;
 // const CLIENT_SECRET = process.env.CLIENT_SECRET;
 // const REDIRECT_URI = process.env.REDIRECT_URI;
 // const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
-// const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105262068"; // Fallback list ID for texts
-// const VOICEMAIL_LIST_ID = "901105537156"; // List ID for voicemails
+// const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105537156"; // Fallback list ID for texts
+// const VOICEMAIL_LIST_ID = "901105262068"; // List ID for voicemails
 
 // // Helper function for making HTTPS requests
 // const makeApiRequest = (options, postData = null) => {
@@ -215,9 +250,15 @@ module.exports = app;
 //   });
 // };
 
-// // Helper function for formatting date
-// const formatDate = (dateString) => {
-//   return new Date(dateString).toLocaleString("en-US", {
+// // Helper function for formatting date to Pacific Time
+// const formatDateToPacific = (dateString) => {
+//   const utcDate = new Date(dateString);
+//   // Convert UTC to Pacific Time (UTC-7 in summer, UTC-8 in winter)
+//   const pacificOffset = -7; // Adjust this value if needed
+//   const pacificDate = new Date(
+//     utcDate.getTime() + pacificOffset * 60 * 60 * 1000
+//   );
+//   return pacificDate.toLocaleString("en-US", {
 //     year: "numeric",
 //     month: "long",
 //     day: "numeric",
@@ -246,7 +287,7 @@ module.exports = app;
 //     // Process the completed call (voicemail or missed call)
 //     const callerNumber = eventDataObject.from;
 //     const numberDialed = eventDataObject.to;
-//     const time = formatDate(eventDataObject.createdAt);
+//     const time = formatDateToPacific(eventDataObject.createdAt);
 //     const body = eventDataObject.voicemail
 //       ? `Voicemail link: ${eventDataObject.voicemail.url}`
 //       : "No voicemail available.";
@@ -281,7 +322,7 @@ module.exports = app;
 //     // Process the received text message
 //     const senderNumber = eventDataObject.from;
 //     const recipientNumber = eventDataObject.to;
-//     const time = formatDate(eventDataObject.createdAt);
+//     const time = formatDateToPacific(eventDataObject.createdAt);
 //     const messageContent = eventDataObject.body || "No message body.";
 
 //     // If media is included, append links to it
