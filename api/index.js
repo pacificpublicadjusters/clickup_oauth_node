@@ -59,6 +59,11 @@ const formatDate = (dateString) => {
   });
 };
 
+// Root GET route to prevent 'Cannot GET /' error
+app.get("/", (req, res) => {
+  res.send("Server is running.");
+});
+
 // Webhook endpoint to handle both voicemails and texts
 app.post("/webhook", async (req, res) => {
   const eventData = req.body;
