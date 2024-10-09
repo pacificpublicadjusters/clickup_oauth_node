@@ -47,9 +47,15 @@ const makeApiRequest = (options, postData = null) => {
   });
 };
 
-// Helper function for formatting date
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleString("en-US", {
+// Helper function for formatting date to Pacific Time
+const formatDateToPacific = (dateString) => {
+  const utcDate = new Date(dateString);
+  // Convert UTC to Pacific Time (UTC-7 in summer, UTC-8 in winter)
+  const pacificOffset = -7; // Adjust this value if needed
+  const pacificDate = new Date(
+    utcDate.getTime() + pacificOffset * 60 * 60 * 1000
+  );
+  return pacificDate.toLocaleString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -78,7 +84,7 @@ app.post("/webhook", async (req, res) => {
     // Process the completed call (voicemail or missed call)
     const callerNumber = eventDataObject.from;
     const numberDialed = eventDataObject.to;
-    const time = formatDate(eventDataObject.createdAt);
+    const time = formatDateToPacific(eventDataObject.createdAt);
     const body = eventDataObject.voicemail
       ? `Voicemail link: ${eventDataObject.voicemail.url}`
       : "No voicemail available.";
@@ -113,7 +119,7 @@ app.post("/webhook", async (req, res) => {
     // Process the received text message
     const senderNumber = eventDataObject.from;
     const recipientNumber = eventDataObject.to;
-    const time = formatDate(eventDataObject.createdAt);
+    const time = formatDateToPacific(eventDataObject.createdAt);
     const messageContent = eventDataObject.body || "No message body.";
 
     // If media is included, append links to it
@@ -174,7 +180,8 @@ module.exports = app;
 // const CLIENT_SECRET = process.env.CLIENT_SECRET;
 // const REDIRECT_URI = process.env.REDIRECT_URI;
 // const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
-// const LIST_ID = process.env.LIST_ID || "901105262068"; // Fallback list ID
+// const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105262068"; // Fallback list ID for texts
+// const VOICEMAIL_LIST_ID = "901105537156"; // List ID for voicemails
 
 // // Helper function for making HTTPS requests
 // const makeApiRequest = (options, postData = null) => {
@@ -253,7 +260,7 @@ module.exports = app;
 
 //     const options = {
 //       hostname: "api.clickup.com",
-//       path: `/api/v2/list/${LIST_ID}/task`,
+//       path: `/api/v2/list/${VOICEMAIL_LIST_ID}/task`,
 //       method: "POST",
 //       headers: {
 //         Authorization: ACCESS_TOKEN,
@@ -295,7 +302,7 @@ module.exports = app;
 
 //     const options = {
 //       hostname: "api.clickup.com",
-//       path: `/api/v2/list/${LIST_ID}/task`,
+//       path: `/api/v2/list/${TEXT_LIST_ID}/task`,
 //       method: "POST",
 //       headers: {
 //         Authorization: ACCESS_TOKEN,
