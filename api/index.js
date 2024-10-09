@@ -12,8 +12,8 @@ const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI;
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
-const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105262068"; // Fallback list ID for texts
-const VOICEMAIL_LIST_ID = "901105537156"; // List ID for voicemails
+const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105537156"; // Fallback list ID for texts
+const VOICEMAIL_LIST_ID = "901105262068"; // List ID for voicemails
 
 // Helper function for making HTTPS requests
 const makeApiRequest = (options, postData = null) => {
