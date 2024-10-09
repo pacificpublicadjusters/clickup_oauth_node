@@ -1,3 +1,19 @@
+const express = require("express");
+const https = require("https");
+const querystring = require("querystring");
+const dotenv = require("dotenv");
+
+dotenv.config();
+const app = express();
+app.use(express.json());
+
+// Environment Variables
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const REDIRECT_URI = process.env.REDIRECT_URI;
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
+const LIST_ID = process.env.LIST_ID || "901105262068"; // Fallback list ID
+
 app.post("/webhook", async (req, res) => {
   const eventData = req.body;
   console.log("Incoming event data:", eventData);
