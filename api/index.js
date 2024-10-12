@@ -1,3 +1,23 @@
+const express = require("express");
+const https = require("https");
+const querystring = require("querystring");
+const dotenv = require("dotenv");
+
+dotenv.config();
+const app = express();
+app.use(express.json());
+
+// Environment Variables
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const REDIRECT_URI = process.env.REDIRECT_URI;
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
+const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105537156"; // Fallback list ID for texts
+const VOICEMAIL_LIST_ID = "901105262068"; // List ID for voicemails
+
+// Data
+const { employeeIds, teams } = require("../utils/data/teams");
+
 app.post("/webhook", async (req, res) => {
   const eventData = req.body;
   console.log("Incoming event data:", eventData);
