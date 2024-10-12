@@ -112,6 +112,11 @@ app.post("/webhook", async (req, res) => {
       .send("Team not found for the provided phone number.");
   }
 
+  // Collect all employee emails for assigning the task
+  const assignedEmployeeEmails = teamInfo.employees.map(
+    (employee) => employee.email
+  );
+
   let taskName;
   let taskDescription;
 
@@ -130,6 +135,7 @@ app.post("/webhook", async (req, res) => {
       description: taskDescription,
       status: "to do",
       priority: 2,
+      assignees: assignedEmployeeEmails.map((email) => ({ email })), // Assign to all employees
     });
 
     const options = {
@@ -172,6 +178,7 @@ app.post("/webhook", async (req, res) => {
       description: taskDescription,
       status: "to do",
       priority: 2,
+      assignees: assignedEmployeeEmails.map((email) => ({ email })), // Assign to all employees
     });
 
     const options = {
@@ -210,7 +217,6 @@ module.exports = app;
 
 // const express = require("express");
 // const https = require("https");
-// const querystring = require("querystring");
 // const dotenv = require("dotenv");
 
 // dotenv.config();
@@ -218,9 +224,6 @@ module.exports = app;
 // app.use(express.json());
 
 // // Environment Variables
-// const CLIENT_ID = process.env.CLIENT_ID;
-// const CLIENT_SECRET = process.env.CLIENT_SECRET;
-// const REDIRECT_URI = process.env.REDIRECT_URI;
 // const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 // const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105537156"; // Fallback list ID for texts
 // const VOICEMAIL_LIST_ID = "901105262068"; // List ID for voicemails
@@ -279,6 +282,26 @@ module.exports = app;
 //   });
 // };
 
+// // Function to gather team details based on "to" number
+// const getTeamInfoByNumber = (toNumber) => {
+//   const team = teams.find((team) => team.number === toNumber);
+//   if (!team) return null;
+
+//   // Gather employee info based on employeeIds from the team
+//   const teamEmployees = team.employeeIds
+//     .map((id) => {
+//       const employee = employeeIds.find((emp) => emp.id === id);
+//       return employee ? { name: employee.name, email: employee.email } : null;
+//     })
+//     .filter((emp) => emp !== null);
+
+//   // Create team information object
+//   return {
+//     teamName: team.team,
+//     employees: teamEmployees,
+//   };
+// };
+
 // // Root GET route to prevent 'Cannot GET /' error
 // app.get("/", (req, res) => {
 //   res.send("Server is running.");
@@ -297,6 +320,15 @@ module.exports = app;
 //   const numberDialed = eventDataObject.to;
 //   const time = formatDateToPacific(eventDataObject.createdAt);
 
+//   // Get team info for the "to" phone number
+//   const teamInfo = getTeamInfoByNumber(numberDialed);
+//   if (!teamInfo) {
+//     console.error("No team found for this phone number:", numberDialed);
+//     return res
+//       .status(400)
+//       .send("Team not found for the provided phone number.");
+//   }
+
 //   let taskName;
 //   let taskDescription;
 
@@ -308,7 +340,7 @@ module.exports = app;
 //       : "No voicemail available.";
 
 //     taskName = `Voicemail from ${callerNumber}`;
-//     taskDescription = `Missed call from ${callerNumber} to ${numberDialed} at ${time}. ${body}`;
+//     taskDescription = `Missed call from ${callerNumber} to ${teamInfo.teamName} at ${time}. ${body}`;
 
 //     const taskData = JSON.stringify({
 //       name: taskName,
@@ -349,8 +381,8 @@ module.exports = app;
 //       mediaInfo = `\nAttached media:\n${mediaLinks}`;
 //     }
 
-//     taskName = `Text message from ${callerNumber}`;
-//     taskDescription = `Text received from ${callerNumber} to ${numberDialed} at ${time}. Message: ${messageContent}${mediaInfo}`;
+//     taskName = `Text message to ${teamInfo.teamName} from ${callerNumber}`;
+//     taskDescription = `Text received from ${callerNumber} to ${teamInfo.teamName} at ${time}. Message: ${messageContent}${mediaInfo}`;
 
 //     const taskData = JSON.stringify({
 //       name: taskName,
