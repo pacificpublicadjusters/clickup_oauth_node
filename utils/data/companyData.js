@@ -1,4 +1,4 @@
-const employees = [
+const employeeIds = [
   { name: "Amanda Collins", email: "charterclaimsllc@gmail.com", id: 50510498 },
   { name: "Andrea Robles", email: "andrea@pacificpa.claims", id: 75474107 },
   { name: "Andres Robles", email: "andrew@pacificpa.claims", id: 75472456 },
