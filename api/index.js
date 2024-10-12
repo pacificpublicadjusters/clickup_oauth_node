@@ -74,7 +74,7 @@ const getTeamInfoByNumber = (toNumber) => {
   const teamEmployees = team.employeeIds
     .map((id) => {
       const employee = employeeIds.find((emp) => emp.id === id);
-      return employee ? { name: employee.name, email: employee.email } : null;
+      return employee ? { name: employee.name, userId: employee.id } : null;
     })
     .filter((emp) => emp !== null);
 
@@ -112,13 +112,9 @@ app.post("/webhook", async (req, res) => {
       .send("Team not found for the provided phone number.");
   }
 
-  // Collect all employee emails for assigning the task
-  const assignedEmployeeEmails = teamInfo.employees.map(
-    (employee) => employee.email
-  );
-
   let taskName;
   let taskDescription;
+  let assignees; // Array to hold user IDs for assigning tasks
 
   // Determine if the event is a call or text
   if (eventType === "call.completed") {
@@ -130,12 +126,14 @@ app.post("/webhook", async (req, res) => {
     taskName = `Voicemail from ${callerNumber}`;
     taskDescription = `Missed call from ${callerNumber} to ${teamInfo.teamName} at ${time}. ${body}`;
 
+    assignees = teamInfo.employees.map((emp) => emp.userId); // Get user IDs for assignees
+
     const taskData = JSON.stringify({
       name: taskName,
       description: taskDescription,
       status: "to do",
       priority: 2,
-      assignees: assignedEmployeeEmails.map((email) => ({ email })), // Assign to all employees
+      assignees: assignees, // Assign to all relevant employees
     });
 
     const options = {
@@ -173,12 +171,14 @@ app.post("/webhook", async (req, res) => {
     taskName = `Text message to ${teamInfo.teamName} from ${callerNumber}`;
     taskDescription = `Text received from ${callerNumber} to ${teamInfo.teamName} at ${time}. Message: ${messageContent}${mediaInfo}`;
 
+    assignees = teamInfo.employees.map((emp) => emp.userId); // Get user IDs for assignees
+
     const taskData = JSON.stringify({
       name: taskName,
       description: taskDescription,
       status: "to do",
       priority: 2,
-      assignees: assignedEmployeeEmails.map((email) => ({ email })), // Assign to all employees
+      assignees: assignees, // Assign to all relevant employees
     });
 
     const options = {
@@ -229,7 +229,7 @@ module.exports = app;
 // const VOICEMAIL_LIST_ID = "901105262068"; // List ID for voicemails
 
 // // Data
-// const { employeeIds, teams } = require("../utils/data/companyData");
+// const { employees, teams } = require("../utils/data/companyData");
 
 // // Helper function for making HTTPS requests
 // const makeApiRequest = (options, postData = null) => {
@@ -287,10 +287,10 @@ module.exports = app;
 //   const team = teams.find((team) => team.number === toNumber);
 //   if (!team) return null;
 
-//   // Gather employee info based on employeeIds from the team
-//   const teamEmployees = team.employeeIds
+//   // Gather employee info based on employees from the team
+//   const teamEmployees = team.employees
 //     .map((id) => {
-//       const employee = employeeIds.find((emp) => emp.id === id);
+//       const employee = employees.find((emp) => emp.id === id);
 //       return employee ? { name: employee.name, email: employee.email } : null;
 //     })
 //     .filter((emp) => emp !== null);
@@ -329,6 +329,11 @@ module.exports = app;
 //       .send("Team not found for the provided phone number.");
 //   }
 
+//   // Collect all employee emails for assigning the task
+//   const assignedEmployeeEmails = teamInfo.employees.map(
+//     (employee) => employee.email
+//   );
+
 //   let taskName;
 //   let taskDescription;
 
@@ -347,6 +352,7 @@ module.exports = app;
 //       description: taskDescription,
 //       status: "to do",
 //       priority: 2,
+//       assignees: assignedEmployeeEmails.map((email) => ({ email })), // Assign to all employees
 //     });
 
 //     const options = {
@@ -389,6 +395,7 @@ module.exports = app;
 //       description: taskDescription,
 //       status: "to do",
 //       priority: 2,
+//       assignees: assignedEmployeeEmails.map((email) => ({ email })), // Assign to all employees
 //     });
 
 //     const options = {
