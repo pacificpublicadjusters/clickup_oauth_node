@@ -16,7 +16,7 @@ const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105537156"; // Fallback lis
 const VOICEMAIL_LIST_ID = "901105262068"; // List ID for voicemails
 
 // Data
-const { employeeIds, teams } = require("../utils/data/teams");
+const { employeeIds, teams } = require("../utils/data/companyData");
 
 // Helper function for making HTTPS requests
 const makeApiRequest = (options, postData = null) => {
