@@ -164,7 +164,7 @@ app.post("/webhook", async (req, res) => {
       mediaInfo = `\nAttached media:\n${mediaLinks}`;
     }
 
-    taskName = `Text message from ${callerNumber}`;
+    taskName = `Text message to ${teamInfo.teamName} from ${callerNumber}`;
     taskDescription = `Text received from ${callerNumber} to ${teamInfo.teamName} at ${time}. Message: ${messageContent}${mediaInfo}`;
 
     const taskData = JSON.stringify({
