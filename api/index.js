@@ -18,6 +18,63 @@ const VOICEMAIL_LIST_ID = "901105262068"; // List ID for voicemails
 // Data
 const { employeeIds, teams } = require("../utils/data/teams");
 
+// Helper function for making HTTPS requests
+const makeApiRequest = (options, postData = null) => {
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let data = "";
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => {
+        try {
+          const parsedData = JSON.parse(data);
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            reject(
+              new Error(
+                `API responded with status ${res.statusCode}: ${
+                  parsedData.message || "Unknown error"
+                }`
+              )
+            );
+          } else {
+            resolve(parsedData);
+          }
+        } catch (err) {
+          reject(new Error("Failed to parse API response"));
+        }
+      });
+    });
+
+    req.on("error", (error) => reject(error));
+    if (postData) req.write(postData);
+    req.end();
+  });
+};
+
+// Helper function for formatting date to Pacific Time
+const formatDateToPacific = (dateString) => {
+  const utcDate = new Date(dateString);
+  // Convert UTC to Pacific Time (UTC-7 in summer, UTC-8 in winter)
+  const pacificOffset = -7; // Adjust this value if needed
+  const pacificDate = new Date(
+    utcDate.getTime() + pacificOffset * 60 * 60 * 1000
+  );
+  return pacificDate.toLocaleString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short",
+  });
+};
+
+// Root GET route to prevent 'Cannot GET /' error
+app.get("/", (req, res) => {
+  res.send("Server is running.");
+});
+
+// Webhook endpoint to handle both voicemails and texts
 app.post("/webhook", async (req, res) => {
   const eventData = req.body;
   console.log("Incoming event data:", eventData);
@@ -117,6 +174,14 @@ app.post("/webhook", async (req, res) => {
     res.status(200).send("Event type not handled.");
   }
 });
+
+// Start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+module.exports = app;
 
 // const express = require("express");
 // const https = require("https");
