@@ -116,6 +116,8 @@ const teams = [
   },
 ];
 
+module.exports = { employeeIds, teams };
+
 // const teams = [
 //   {
 //     team: "A2 Solutions",
@@ -167,8 +169,6 @@ const teams = [
 //     employeeIds: [10, 50510498, 3, 4, 5],
 //   },
 // ];
-
-module.exports = { employeeIds, teams };
 
 // const employeeIds = [
 //   {
@@ -225,79 +225,6 @@ module.exports = { employeeIds, teams };
 //     id: 11,
 //     name: "Tom Glenn",
 //     email: "tom@phaserservices.com",
-//   },
-// ];
-
-// const teams = [
-//   {
-//     number: "+13605486904",
-//     team: "Primary - Mark Stockwell",
-//     employeeIds: [6],
-//   },
-//   {
-//     number: "+13602051515",
-//     team: "A2 Solutions",
-//     employeeIds: [3, 4, 9, 10],
-//   },
-//   {
-//     number: "+12062222708",
-//     team: "Primary - Clint Wooley",
-//     employeeIds: [5],
-//   },
-//   {
-//     number: "+14052974831",
-//     team: "Meth Alarm Oklahoma",
-//     employeeIds: [8, 10],
-//   },
-//   {
-//     number: "+13603024068",
-//     team: "Primary - Amanda Collins",
-//     employeeIds: [2],
-//   },
-//   {
-//     number: "+12066729240",
-//     team: "PMZ Collaterals",
-//     employeeIds: [3, 4, 10, 6, 9],
-//   },
-//   {
-//     number: "+14258000411",
-//     team: "Dorothy Leads",
-//     employeeIds: [10, 7, 2, 3, 4, 5, 6, 9],
-//   },
-//   {
-//     number: "+14258000411",
-//     team: "New Clients",
-//     employeeIds: [10, 2, 4, 5, 6, 9],
-//   },
-//   {
-//     number: "+14252306333",
-//     team: "Meth Alarm",
-//     employeeIds: [10, 7, 11],
-//   },
-//   {
-//     number: "+15092603923",
-//     team: "Primary - John Paul Fernandez",
-//     employeeIds: [6],
-//   },
-//   {
-//     number: "+13603028654",
-//     team: "Recorded Line Team 4",
-//     employeeIds: [10, 2, 3, 4, 5],
-//   },
-//   {
-//     number: "+16232541114",
-//     team: "Primary - Tom Glenn",
-//     employeeIds: [11],
-//   },
-//   {
-//     number: "+1360217041",
-//     team: "Client Line Team 4",
-//     employeeIds: [10, 2, 3, 4, 5],
-//   },
-//   {
-//     number: "+12062030223",
-//     team: "Big Lead Machine",
-//     employeeIds: [11],
 //   },
 // ];
 
