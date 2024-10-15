@@ -44,7 +44,7 @@ const teams = [
   {
     number: "+13602051515",
     team: "A2 Solutions",
-    employeeIds: [75474107, 75472456, 55775373, 37683215], // Andrea Robles, Andres Robles, Pacific PA Support, Taylor Babb
+    employeeIds: [75474107, 75472456, 55775373], // Andrea Robles, Andres Robles, Pacific PA Support,
   },
   {
     number: "+12062030223",
@@ -54,7 +54,7 @@ const teams = [
   {
     number: "+13602170141",
     team: "Client Line Team 4",
-    employeeIds: [37683215, 50510498, 75474107, 75472456, 50510480], // Taylor Babb, Amanda Collins, Andrea Robles, Andres Robles, Clint Wooley
+    employeeIds: [50510498, 75474107, 75472456, 50510480], // , Amanda Collins, Andrea Robles, Andres Robles, Clint Wooley
   },
   {
     number: "+12062222708",
@@ -84,35 +84,34 @@ const teams = [
   {
     number: "+13603028654",
     team: "Recorded Line Team 4",
-    employeeIds: [37683215, 50510498, 75474107, 75472456, 50510480], // Taylor Babb, Amanda Collins, Andrea Robles, Andres Robles, Clint Wooley
+    employeeIds: [50510498, 75474107, 75472456, 50510480], // , Amanda Collins, Andrea Robles, Andres Robles, Clint Wooley
   },
   {
     number: "+14258000411",
     team: "Dorothy Leads",
     employeeIds: [
-      37683215, 75363521, 50510498, 75474107, 75472456, 50510480, 90173870,
-      55775373,
-    ], // Taylor Babb, Mark Stockwell, Amanda Collins, Andrea Robles, Andres Robles, Clint Wooley, JohnPaul, Pacific PA Support
+      75363521, 50510498, 75474107, 75472456, 50510480, 90173870, 55775373,
+    ], // , Mark Stockwell, Amanda Collins, Andrea Robles, Andres Robles, Clint Wooley, JohnPaul, Pacific PA Support
   },
   {
     number: "+14258000411",
     team: "New Clients",
-    employeeIds: [37683215, 50510498, 75472456, 50510480, 90173870, 55775373], // Taylor Babb, Amanda Collins, Andres Robles, Clint Wooley, JohnPaul, Pacific PA Support
+    employeeIds: [50510498, 75472456, 50510480, 90173870, 55775373], // , Amanda Collins, Andres Robles, Clint Wooley, JohnPaul, Pacific PA Support
   },
   {
     number: "+14052974831",
     team: "Meth Alarm Oklahoma",
-    employeeIds: [75481428, 37683215], // Mollie Babb, Taylor Babb
+    employeeIds: [75481428], // Mollie Babb,
   },
   {
     number: "+14252306333",
     team: "Meth Alarm",
-    employeeIds: [37683215, 75363521, 75481452], // Taylor Babb, Mark Stockwell, Tom Glenn
+    employeeIds: [75363521, 75481452], // , Mark Stockwell, Tom Glenn
   },
   {
     number: "+12066729240",
     team: "PMZ Collaterals",
-    employeeIds: [75474107, 75472456, 37683215, 90173870, 55775373], // Andrea Robles, Andres Robles, Taylor Babb, JohnPaul, Pacific PA Support
+    employeeIds: [75474107, 75472456, , 90173870, 55775373], // Andrea Robles, Andres Robles, , JohnPaul, Pacific PA Support
   },
 ];
 
