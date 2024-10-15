@@ -123,7 +123,7 @@ app.post("/webhook", async (req, res) => {
       ? `Voicemail link: ${eventDataObject.voicemail.url}`
       : "No voicemail available.";
 
-    taskName = `New Voicemail from ${callerNumber} to ${teamInfo.teamName}`;
+    taskName = `New Voicemail to ${teamInfo.teamName}`;
     taskDescription = `New Voicemail. Please complete this task when addressed.\nFrom: ${callerNumber}\nTo: ${teamInfo.teamName}\nAt: ${time}\nLink: ${body}`;
 
     assignees = teamInfo.employees.map((emp) => emp.userId); // Get user IDs for assignees
@@ -170,7 +170,7 @@ app.post("/webhook", async (req, res) => {
       mediaInfo = `\nAttached media:\n${mediaLinks}`;
     }
 
-    taskName = `Text message to ${teamInfo.teamName} from ${callerNumber}`;
+    taskName = `Text message to ${teamInfo.teamName}`;
     taskDescription = `New Text. Please complete this task when addressed.\nFrom: ${callerNumber}\n To: ${teamInfo.teamName}\nAt: ${time}\nMessage: ${messageContent}${mediaInfo}`;
 
     assignees = teamInfo.employees.map((emp) => emp.userId); // Get user IDs for assignees
