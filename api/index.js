@@ -124,7 +124,7 @@ app.post("/webhook", async (req, res) => {
       : "No voicemail available.";
 
     taskName = `Voicemail from ${callerNumber} to ${teamInfo.teamName}`;
-    taskDescription = `Missed call from ${callerNumber} to ${teamInfo.teamName} at ${time}. ${body}`;
+    taskDescription = `Voicemail from ${callerNumber} to ${teamInfo.teamName} at ${time}. Please complete this task when addressed. ⬇️<br>Link: ${body}`;
 
     assignees = teamInfo.employees.map((emp) => emp.userId); // Get user IDs for assignees
 
