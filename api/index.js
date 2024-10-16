@@ -21,7 +21,7 @@ const oauth2Client = new OAuth2(
 );
 const SCOPES = ["https://www.googleapis.com/auth/contacts.readonly"];
 
-// Google Cloud Console
+// Google Cloud Console - Token setup
 app.get("/auth", (req, res) => {
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: "offline",
@@ -34,7 +34,9 @@ app.get("/oauth2callback", (req, res) => {
   const { code } = req.query;
   oauth2Client.getToken(code, (err, tokens) => {
     if (err) return res.send("Error retrieving access token");
+    // Store the access and refresh tokens for future use
     oauth2Client.setCredentials(tokens);
+    console.log("Tokens received and set:", tokens);
     res.send("Authentication successful! You can close this tab.");
   });
 });
@@ -87,8 +89,8 @@ const normalizePhoneNumber = (phone) => {
 
 // Helper function to fetch Google Contacts
 const getGoogleContacts = async () => {
-  const service = google.people({ version: "v1", auth: oauth2Client });
   try {
+    const service = google.people({ version: "v1", auth: oauth2Client });
     const response = await service.people.connections.list({
       resourceName: "people/me",
       pageSize: 1000,
@@ -103,12 +105,10 @@ const getGoogleContacts = async () => {
       const phoneNumbers = person.phoneNumbers || [];
       phoneNumbers.forEach((phone) => {
         const formattedPhoneNumber = normalizePhoneNumber(phone.value); // Normalize the phone number
-        console.log(normalizePhoneNumber);
         contacts[formattedPhoneNumber] = name;
       });
     });
 
-    console.log(contacts);
     return contacts;
   } catch (error) {
     console.error("Error fetching contacts", error);
@@ -171,7 +171,6 @@ app.post("/webhook", async (req, res) => {
 
   // Extract common data
   const callerNumber = normalizePhoneNumber(eventDataObject.from); // Clean and normalize caller number
-  console.log(callerNumber);
   const numberDialed = eventDataObject.to;
   const time = formatDateToPacific(eventDataObject.createdAt);
 
@@ -292,6 +291,7 @@ module.exports = app;
 // const express = require("express");
 // const https = require("https");
 // const dotenv = require("dotenv");
+// const { google } = require("googleapis");
 
 // dotenv.config();
 // const app = express();
@@ -302,8 +302,7 @@ module.exports = app;
 // const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105537156"; // Fallback list ID for texts
 // const VOICEMAIL_LIST_ID = process.env.VOICEMAIL_LIST_ID || "901105262068"; // List ID for voicemails
 
-// // Google Cloud Console
-// const { google } = require("googleapis");
+// // Google OAuth
 // const OAuth2 = google.auth.OAuth2;
 // const oauth2Client = new OAuth2(
 //   process.env.GOOGLE_CLIENT_ID,
@@ -311,6 +310,24 @@ module.exports = app;
 //   process.env.GOOGLE_REDIRECT_URI
 // );
 // const SCOPES = ["https://www.googleapis.com/auth/contacts.readonly"];
+
+// // Google Cloud Console
+// app.get("/auth", (req, res) => {
+//   const authUrl = oauth2Client.generateAuthUrl({
+//     access_type: "offline",
+//     scope: SCOPES,
+//   });
+//   res.redirect(authUrl);
+// });
+
+// app.get("/oauth2callback", (req, res) => {
+//   const { code } = req.query;
+//   oauth2Client.getToken(code, (err, tokens) => {
+//     if (err) return res.send("Error retrieving access token");
+//     oauth2Client.setCredentials(tokens);
+//     res.send("Authentication successful! You can close this tab.");
+//   });
+// });
 
 // // Data
 // const { employeeIds, teams } = require("../utils/data/companyData");
@@ -347,10 +364,51 @@ module.exports = app;
 //   });
 // };
 
+// // Helper function to normalize phone numbers to +10000000000 format
+// const normalizePhoneNumber = (phone) => {
+//   let normalized = phone.replace(/[^\d]/g, ""); // Remove non-digit characters
+//   if (normalized.length === 10) {
+//     normalized = `+1${normalized}`; // Assuming US country code
+//   } else if (!normalized.startsWith("+")) {
+//     normalized = `+${normalized}`;
+//   }
+//   return normalized;
+// };
+
+// // Helper function to fetch Google Contacts
+// const getGoogleContacts = async () => {
+//   const service = google.people({ version: "v1", auth: oauth2Client });
+//   try {
+//     const response = await service.people.connections.list({
+//       resourceName: "people/me",
+//       pageSize: 1000,
+//       personFields: "names,phoneNumbers",
+//     });
+//     const connections = response.data.connections || [];
+//     const contacts = {};
+
+//     // Create a lookup for phone numbers and their associated contact names
+//     connections.forEach((person) => {
+//       const name = person.names ? person.names[0].displayName : null;
+//       const phoneNumbers = person.phoneNumbers || [];
+//       phoneNumbers.forEach((phone) => {
+//         const formattedPhoneNumber = normalizePhoneNumber(phone.value); // Normalize the phone number
+//         console.log(normalizePhoneNumber);
+//         contacts[formattedPhoneNumber] = name;
+//       });
+//     });
+
+//     console.log(contacts);
+//     return contacts;
+//   } catch (error) {
+//     console.error("Error fetching contacts", error);
+//     return {};
+//   }
+// };
+
 // // Helper function for formatting date to Pacific Time
 // const formatDateToPacific = (dateString) => {
 //   const utcDate = new Date(dateString);
-//   // Convert UTC to Pacific Time (UTC-7 in summer, UTC-8 in winter)
 //   const pacificOffset = -7; // Adjust this value if needed
 //   const pacificDate = new Date(
 //     utcDate.getTime() + pacificOffset * 60 * 60 * 1000
@@ -379,7 +437,6 @@ module.exports = app;
 //     })
 //     .filter((emp) => emp !== null);
 
-//   // Create team information object
 //   return {
 //     teamName: team.team,
 //     employees: teamEmployees,
@@ -391,39 +448,6 @@ module.exports = app;
 //   res.send("Server is running.");
 // });
 
-// // Google Cloud Console
-// app.get("/auth", (req, res) => {
-//   const authUrl = oauth2Client.generateAuthUrl({
-//     access_type: "offline",
-//     scope: SCOPES,
-//   });
-//   res.redirect(authUrl);
-// });
-
-// app.get("/oauth2callback", (req, res) => {
-//   const { code } = req.query;
-//   oauth2Client.getToken(code, (err, tokens) => {
-//     if (err) return res.send("Error retrieving access token");
-//     oauth2Client.setCredentials(tokens);
-//     res.send("Authentication successful! You can close this tab.");
-//   });
-// });
-
-// app.get("/contacts", async (req, res) => {
-//   const service = google.people({ version: "v1", auth: oauth2Client });
-//   try {
-//     const response = await service.people.connections.list({
-//       resourceName: "people/me",
-//       pageSize: 1000,
-//       personFields: "names,phoneNumbers",
-//     });
-//     const connections = response.data.connections || [];
-//     res.json(connections);
-//   } catch (error) {
-//     res.status(500).send("Error fetching contacts");
-//   }
-// });
-
 // // Webhook endpoint to handle both voicemails and texts
 // app.post("/webhook", async (req, res) => {
 //   const eventData = req.body;
@@ -432,10 +456,17 @@ module.exports = app;
 //   const eventType = eventData.type;
 //   const eventDataObject = eventData.data.object;
 
-//   // Common data to extract for both voicemails and texts
-//   const callerNumber = eventDataObject.from;
+//   // Fetch Google Contacts to match names with numbers
+//   const googleContacts = await getGoogleContacts();
+
+//   // Extract common data
+//   const callerNumber = normalizePhoneNumber(eventDataObject.from); // Clean and normalize caller number
+//   console.log(callerNumber);
 //   const numberDialed = eventDataObject.to;
 //   const time = formatDateToPacific(eventDataObject.createdAt);
+
+//   // Try to find caller name from Google Contacts
+//   const callerName = googleContacts[callerNumber] || callerNumber;
 
 //   // Get team info for the "to" phone number
 //   const teamInfo = getTeamInfoByNumber(numberDialed);
@@ -448,20 +479,17 @@ module.exports = app;
 
 //   let taskName;
 //   let taskDescription;
-//   let assignees; // Array to hold user IDs for assigning tasks
+//   let assignees;
 
-//   // Determine if the event is a call or text
 //   if (eventType === "call.completed") {
-//     // Process the completed call (voicemail or missed call)
 //     const body = eventDataObject.voicemail
 //       ? `Voicemail link: ${eventDataObject.voicemail.url}`
 //       : "No voicemail available.";
 
 //     taskName = `New Voicemail to ${teamInfo.teamName}`;
-//     taskDescription = `New Voicemail. Please complete this task when addressed.\nFrom: ${callerNumber}\nTo: ${teamInfo.teamName}\nTime: ${time}\nLink: ${body}`;
+//     taskDescription = `New Voicemail\nFrom: ${callerName}\nTo: ${teamInfo.teamName}\nTime: ${time}\n${body}`;
 
 //     assignees = teamInfo.employees.map((emp) => emp.userId); // Get user IDs for assignees
-
 //     console.log(assignees);
 
 //     const taskData = JSON.stringify({
@@ -469,8 +497,9 @@ module.exports = app;
 //       description: taskDescription,
 //       status: "to do",
 //       priority: 2,
-//       assignees: assignees, // Assign to all relevant employees
+//       assignees: assignees,
 //     });
+//     console.log(taskData);
 
 //     const options = {
 //       hostname: "api.clickup.com",
@@ -492,7 +521,6 @@ module.exports = app;
 //       res.status(500).send("Failed to create voicemail task.");
 //     }
 //   } else if (eventType === "message.received") {
-//     // Process the received text message
 //     const messageContent = eventDataObject.body || "No message body.";
 
 //     // If media is included, append links to it
@@ -505,7 +533,7 @@ module.exports = app;
 //     }
 
 //     taskName = `Text message to ${teamInfo.teamName}`;
-//     taskDescription = `New Text. Please complete this task when addressed.\nFrom: ${callerNumber}\nTo: ${teamInfo.teamName}\nTime: ${time}\nMessage: ${messageContent}${mediaInfo}`;
+//     taskDescription = `New Text\nFrom: ${callerName}\nTo: ${teamInfo.teamName}\nTime: ${time}\nMessage: ${messageContent}${mediaInfo}`;
 
 //     assignees = teamInfo.employees.map((emp) => emp.userId); // Get user IDs for assignees
 
@@ -514,8 +542,9 @@ module.exports = app;
 //       description: taskDescription,
 //       status: "to do",
 //       priority: 2,
-//       assignees: assignees, // Assign to all relevant employees
+//       assignees: assignees,
 //     });
+//     console.log(taskData);
 
 //     const options = {
 //       hostname: "api.clickup.com",
@@ -537,7 +566,6 @@ module.exports = app;
 //       res.status(500).send("Failed to create text message task.");
 //     }
 //   } else {
-//     // Ignore other event types for now
 //     console.log(`Unhandled event type: ${eventType}`);
 //     res.status(200).send("Event type not handled.");
 //   }
