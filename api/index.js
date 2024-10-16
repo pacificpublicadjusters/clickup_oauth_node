@@ -9,7 +9,7 @@ app.use(express.json());
 // Environment Variables
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105537156"; // Fallback list ID for texts
-const VOICEMAIL_LIST_ID = "901105262068"; // List ID for voicemails
+const VOICEMAIL_LIST_ID = process.env.VOICEMAIL_LIST_ID || "901105262068"; // List ID for voicemails
 
 // Data
 const { employeeIds, teams } = require("../utils/data/companyData");
