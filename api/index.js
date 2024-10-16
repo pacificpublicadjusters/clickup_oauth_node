@@ -171,7 +171,7 @@ app.post("/webhook", async (req, res) => {
     }
 
     taskName = `Text message to ${teamInfo.teamName}`;
-    taskDescription = `New Text. Please complete this task when addressed.\nFrom: ${callerNumber}\n To: ${teamInfo.teamName}\nAt: ${time}\nMessage: ${messageContent}${mediaInfo}`;
+    taskDescription = `New Text. Please complete this task when addressed.\nFrom: ${callerNumber}\nTo: ${teamInfo.teamName}\nAt: ${time}\nMessage: ${messageContent}${mediaInfo}`;
 
     assignees = teamInfo.employees.map((emp) => emp.userId); // Get user IDs for assignees
 
