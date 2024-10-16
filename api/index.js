@@ -56,6 +56,17 @@ const makeApiRequest = (options, postData = null) => {
   });
 };
 
+// Helper function to normalize phone numbers to +10000000000 format
+const normalizePhoneNumber = (phone) => {
+  let normalized = phone.replace(/[^\d]/g, ""); // Remove non-digit characters
+  if (normalized.length === 10) {
+    normalized = `+1${normalized}`; // Assuming US country code
+  } else if (!normalized.startsWith("+")) {
+    normalized = `+${normalized}`;
+  }
+  return normalized;
+};
+
 // Helper function to fetch Google Contacts
 const getGoogleContacts = async () => {
   const service = google.people({ version: "v1", auth: oauth2Client });
@@ -73,7 +84,7 @@ const getGoogleContacts = async () => {
       const name = person.names ? person.names[0].displayName : null;
       const phoneNumbers = person.phoneNumbers || [];
       phoneNumbers.forEach((phone) => {
-        const formattedPhoneNumber = phone.value.replace(/[^\d]/g, ""); // Strip non-digit characters
+        const formattedPhoneNumber = normalizePhoneNumber(phone.value); // Normalize the phone number
         contacts[formattedPhoneNumber] = name;
       });
     });
@@ -139,7 +150,7 @@ app.post("/webhook", async (req, res) => {
   const googleContacts = await getGoogleContacts();
 
   // Extract common data
-  const callerNumber = eventDataObject.from.replace(/[^\d]/g, ""); // Clean caller number
+  const callerNumber = normalizePhoneNumber(eventDataObject.from); // Clean and normalize caller number
   const numberDialed = eventDataObject.to;
   const time = formatDateToPacific(eventDataObject.createdAt);
 
@@ -167,7 +178,7 @@ app.post("/webhook", async (req, res) => {
     taskName = `New Voicemail to ${teamInfo.teamName}`;
     taskDescription = `New Voicemail from ${callerName}.\nTo: ${teamInfo.teamName}\nTime: ${time}\n${body}`;
 
-    assignees = teamInfo.employees.map((emp) => emp.userId);
+    assignees = teamInfo.employees.map((emp) => emp.userId); // Get user IDs for assignees
 
     const taskData = JSON.stringify({
       name: taskName,
@@ -199,6 +210,7 @@ app.post("/webhook", async (req, res) => {
   } else if (eventType === "message.received") {
     const messageContent = eventDataObject.body || "No message body.";
 
+    // If media is included, append links to it
     let mediaInfo = "";
     if (eventDataObject.media && eventDataObject.media.length > 0) {
       const mediaLinks = eventDataObject.media
@@ -210,7 +222,7 @@ app.post("/webhook", async (req, res) => {
     taskName = `Text message to ${teamInfo.teamName}`;
     taskDescription = `New Text from ${callerName}.\nTo: ${teamInfo.teamName}\nTime: ${time}\nMessage: ${messageContent}${mediaInfo}`;
 
-    assignees = teamInfo.employees.map((emp) => emp.userId);
+    assignees = teamInfo.employees.map((emp) => emp.userId); // Get user IDs for assignees
 
     const taskData = JSON.stringify({
       name: taskName,
