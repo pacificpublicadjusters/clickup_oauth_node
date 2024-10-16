@@ -12,6 +12,9 @@ const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105537156"; // Fallback list ID for texts
 const VOICEMAIL_LIST_ID = process.env.VOICEMAIL_LIST_ID || "901105262068"; // List ID for voicemails
 
+// Token storage
+let googleTokens = null;
+
 // Google OAuth
 const OAuth2 = google.auth.OAuth2;
 const oauth2Client = new OAuth2(
@@ -34,9 +37,17 @@ app.get("/oauth2callback", (req, res) => {
   const { code } = req.query;
   oauth2Client.getToken(code, (err, tokens) => {
     if (err) return res.send("Error retrieving access token");
+
     // Store the access and refresh tokens for future use
+    googleTokens = tokens;
     oauth2Client.setCredentials(tokens);
     console.log("Tokens received and set:", tokens);
+
+    // Automatically refresh tokens when needed
+    oauth2Client.on("tokens", (newTokens) => {
+      googleTokens = { ...googleTokens, ...newTokens };
+    });
+
     res.send("Authentication successful! You can close this tab.");
   });
 });
@@ -89,8 +100,15 @@ const normalizePhoneNumber = (phone) => {
 
 // Helper function to fetch Google Contacts
 const getGoogleContacts = async () => {
+  if (!googleTokens) {
+    console.error("No stored tokens available.");
+    return {};
+  }
+
+  oauth2Client.setCredentials(googleTokens); // Ensure OAuth2 client is using the tokens
+
+  const service = google.people({ version: "v1", auth: oauth2Client });
   try {
-    const service = google.people({ version: "v1", auth: oauth2Client });
     const response = await service.people.connections.list({
       resourceName: "people/me",
       pageSize: 1000,
@@ -311,7 +329,7 @@ module.exports = app;
 // );
 // const SCOPES = ["https://www.googleapis.com/auth/contacts.readonly"];
 
-// // Google Cloud Console
+// // Google Cloud Console - Token setup
 // app.get("/auth", (req, res) => {
 //   const authUrl = oauth2Client.generateAuthUrl({
 //     access_type: "offline",
@@ -324,7 +342,9 @@ module.exports = app;
 //   const { code } = req.query;
 //   oauth2Client.getToken(code, (err, tokens) => {
 //     if (err) return res.send("Error retrieving access token");
+//     // Store the access and refresh tokens for future use
 //     oauth2Client.setCredentials(tokens);
+//     console.log("Tokens received and set:", tokens);
 //     res.send("Authentication successful! You can close this tab.");
 //   });
 // });
@@ -377,8 +397,8 @@ module.exports = app;
 
 // // Helper function to fetch Google Contacts
 // const getGoogleContacts = async () => {
-//   const service = google.people({ version: "v1", auth: oauth2Client });
 //   try {
+//     const service = google.people({ version: "v1", auth: oauth2Client });
 //     const response = await service.people.connections.list({
 //       resourceName: "people/me",
 //       pageSize: 1000,
@@ -393,12 +413,10 @@ module.exports = app;
 //       const phoneNumbers = person.phoneNumbers || [];
 //       phoneNumbers.forEach((phone) => {
 //         const formattedPhoneNumber = normalizePhoneNumber(phone.value); // Normalize the phone number
-//         console.log(normalizePhoneNumber);
 //         contacts[formattedPhoneNumber] = name;
 //       });
 //     });
 
-//     console.log(contacts);
 //     return contacts;
 //   } catch (error) {
 //     console.error("Error fetching contacts", error);
@@ -461,7 +479,6 @@ module.exports = app;
 
 //   // Extract common data
 //   const callerNumber = normalizePhoneNumber(eventDataObject.from); // Clean and normalize caller number
-//   console.log(callerNumber);
 //   const numberDialed = eventDataObject.to;
 //   const time = formatDateToPacific(eventDataObject.createdAt);
 
