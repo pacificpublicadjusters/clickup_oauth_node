@@ -113,6 +113,11 @@ const teams = [
     team: "PMZ Collaterals",
     employeeIds: [75474107, 75472456, , 90173870, 55775373], // Andrea Robles, Andres Robles, , JohnPaul, Pacific PA Support
   },
+  {
+    number: "+18885550101",
+    team: "automation tests",
+    employeeIds: [],
+  },
 ];
 
 module.exports = { employeeIds, teams };
