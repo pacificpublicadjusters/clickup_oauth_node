@@ -21,6 +21,24 @@ const oauth2Client = new OAuth2(
 );
 const SCOPES = ["https://www.googleapis.com/auth/contacts.readonly"];
 
+// Google Cloud Console
+app.get("/auth", (req, res) => {
+  const authUrl = oauth2Client.generateAuthUrl({
+    access_type: "offline",
+    scope: SCOPES,
+  });
+  res.redirect(authUrl);
+});
+
+app.get("/oauth2callback", (req, res) => {
+  const { code } = req.query;
+  oauth2Client.getToken(code, (err, tokens) => {
+    if (err) return res.send("Error retrieving access token");
+    oauth2Client.setCredentials(tokens);
+    res.send("Authentication successful! You can close this tab.");
+  });
+});
+
 // Data
 const { employeeIds, teams } = require("../utils/data/companyData");
 
@@ -85,10 +103,12 @@ const getGoogleContacts = async () => {
       const phoneNumbers = person.phoneNumbers || [];
       phoneNumbers.forEach((phone) => {
         const formattedPhoneNumber = normalizePhoneNumber(phone.value); // Normalize the phone number
+        console.log(normalizePhoneNumber);
         contacts[formattedPhoneNumber] = name;
       });
     });
 
+    console.log(contacts);
     return contacts;
   } catch (error) {
     console.error("Error fetching contacts", error);
@@ -151,6 +171,7 @@ app.post("/webhook", async (req, res) => {
 
   // Extract common data
   const callerNumber = normalizePhoneNumber(eventDataObject.from); // Clean and normalize caller number
+  console.log(callerNumber);
   const numberDialed = eventDataObject.to;
   const time = formatDateToPacific(eventDataObject.createdAt);
 
@@ -179,6 +200,7 @@ app.post("/webhook", async (req, res) => {
     taskDescription = `New Voicemail from ${callerName}.\nTo: ${teamInfo.teamName}\nTime: ${time}\n${body}`;
 
     assignees = teamInfo.employees.map((emp) => emp.userId); // Get user IDs for assignees
+    console.log(assignees);
 
     const taskData = JSON.stringify({
       name: taskName,
@@ -187,6 +209,7 @@ app.post("/webhook", async (req, res) => {
       priority: 2,
       assignees: assignees,
     });
+    console.log(taskData);
 
     const options = {
       hostname: "api.clickup.com",
@@ -231,6 +254,7 @@ app.post("/webhook", async (req, res) => {
       priority: 2,
       assignees: assignees,
     });
+    console.log(taskData);
 
     const options = {
       hostname: "api.clickup.com",
