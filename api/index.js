@@ -1,6 +1,8 @@
 const express = require("express");
 const https = require("https");
 const dotenv = require("dotenv");
+const fs = require("fs"); // File system to store tokens
+const path = require("path");
 const { google } = require("googleapis");
 
 dotenv.config();
@@ -12,8 +14,8 @@ const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105537156"; // Fallback list ID for texts
 const VOICEMAIL_LIST_ID = process.env.VOICEMAIL_LIST_ID || "901105262068"; // List ID for voicemails
 
-// Token storage
-let googleTokens = null;
+// Token storage file
+const TOKEN_PATH = path.join(__dirname, "googleTokens.json");
 
 // Google OAuth
 const OAuth2 = google.auth.OAuth2;
@@ -23,6 +25,25 @@ const oauth2Client = new OAuth2(
   process.env.GOOGLE_REDIRECT_URI
 );
 const SCOPES = ["https://www.googleapis.com/auth/contacts.readonly"];
+
+// Helper function to store tokens in a file
+const storeTokens = (tokens) => {
+  fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens), (err) => {
+    if (err) return console.error("Error saving tokens:", err);
+    console.log("Tokens stored to", TOKEN_PATH);
+  });
+};
+
+// Helper function to load tokens from file
+const loadTokens = () => {
+  try {
+    const tokenData = fs.readFileSync(TOKEN_PATH, "utf8");
+    return JSON.parse(tokenData);
+  } catch (err) {
+    console.log("No stored tokens found.");
+    return null;
+  }
+};
 
 // Google Cloud Console - Token setup
 app.get("/auth", (req, res) => {
@@ -38,14 +59,13 @@ app.get("/oauth2callback", (req, res) => {
   oauth2Client.getToken(code, (err, tokens) => {
     if (err) return res.send("Error retrieving access token");
 
-    // Store the access and refresh tokens for future use
-    googleTokens = tokens;
+    // Store the access and refresh tokens
     oauth2Client.setCredentials(tokens);
+    storeTokens(tokens);
     console.log("Tokens received and set:", tokens);
 
-    // Automatically refresh tokens when needed
     oauth2Client.on("tokens", (newTokens) => {
-      googleTokens = { ...googleTokens, ...newTokens };
+      storeTokens({ ...tokens, ...newTokens });
     });
 
     res.send("Authentication successful! You can close this tab.");
@@ -100,12 +120,13 @@ const normalizePhoneNumber = (phone) => {
 
 // Helper function to fetch Google Contacts
 const getGoogleContacts = async () => {
-  if (!googleTokens) {
+  const storedTokens = loadTokens();
+  if (!storedTokens) {
     console.error("No stored tokens available.");
     return {};
   }
 
-  oauth2Client.setCredentials(googleTokens); // Ensure OAuth2 client is using the tokens
+  oauth2Client.setCredentials(storedTokens); // Use stored tokens
 
   const service = google.people({ version: "v1", auth: oauth2Client });
   try {
@@ -320,6 +341,9 @@ module.exports = app;
 // const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105537156"; // Fallback list ID for texts
 // const VOICEMAIL_LIST_ID = process.env.VOICEMAIL_LIST_ID || "901105262068"; // List ID for voicemails
 
+// // Token storage
+// let googleTokens = null;
+
 // // Google OAuth
 // const OAuth2 = google.auth.OAuth2;
 // const oauth2Client = new OAuth2(
@@ -342,9 +366,17 @@ module.exports = app;
 //   const { code } = req.query;
 //   oauth2Client.getToken(code, (err, tokens) => {
 //     if (err) return res.send("Error retrieving access token");
+
 //     // Store the access and refresh tokens for future use
+//     googleTokens = tokens;
 //     oauth2Client.setCredentials(tokens);
 //     console.log("Tokens received and set:", tokens);
+
+//     // Automatically refresh tokens when needed
+//     oauth2Client.on("tokens", (newTokens) => {
+//       googleTokens = { ...googleTokens, ...newTokens };
+//     });
+
 //     res.send("Authentication successful! You can close this tab.");
 //   });
 // });
@@ -397,8 +429,15 @@ module.exports = app;
 
 // // Helper function to fetch Google Contacts
 // const getGoogleContacts = async () => {
+//   if (!googleTokens) {
+//     console.error("No stored tokens available.");
+//     return {};
+//   }
+
+//   oauth2Client.setCredentials(googleTokens); // Ensure OAuth2 client is using the tokens
+
+//   const service = google.people({ version: "v1", auth: oauth2Client });
 //   try {
-//     const service = google.people({ version: "v1", auth: oauth2Client });
 //     const response = await service.people.connections.list({
 //       resourceName: "people/me",
 //       pageSize: 1000,
