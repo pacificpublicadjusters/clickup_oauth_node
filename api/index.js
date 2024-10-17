@@ -25,6 +25,8 @@ const oauth2Client = new OAuth2(
   process.env.GOOGLE_REDIRECT_URI
 );
 
+const { employeeIds, teams } = require("../utils/data/companyData");
+
 // Scopes for Google Contacts API
 const SCOPES = ["https://www.googleapis.com/auth/contacts.readonly"];
 
