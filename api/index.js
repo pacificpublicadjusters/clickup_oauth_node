@@ -25,8 +25,6 @@ const oauth2Client = new OAuth2(
   process.env.GOOGLE_REDIRECT_URI
 );
 
-const { employeeIds, teams } = require("../utils/data/companyData");
-
 // Scopes for Google Contacts API
 const SCOPES = ["https://www.googleapis.com/auth/contacts.readonly"];
 
@@ -59,6 +57,8 @@ const saveTokens = (tokens) => {
 let googleTokens = loadTokens();
 if (googleTokens) {
   oauth2Client.setCredentials(googleTokens);
+} else {
+  console.log("No tokens available. Please authenticate.");
 }
 
 // Google OAuth2 authentication
@@ -136,7 +136,7 @@ const normalizePhoneNumber = (phone) => {
 // Helper function to fetch Google Contacts
 const getGoogleContacts = async () => {
   if (!googleTokens) {
-    console.error("No stored tokens available.");
+    console.error("No stored tokens available. Please authenticate via /auth.");
     return {};
   }
 
@@ -353,8 +353,7 @@ module.exports = app;
 // const TEXT_LIST_ID = process.env.TEXT_LIST_ID || "901105537156"; // Fallback list ID for texts
 // const VOICEMAIL_LIST_ID = process.env.VOICEMAIL_LIST_ID || "901105262068"; // List ID for voicemails
 
-// // Token storage
-// let googleTokens = null;
+// // Path to store the Google OAuth tokens
 // const tokensPath = path.join(__dirname, "googleTokens.json");
 
 // // Google OAuth
@@ -364,24 +363,44 @@ module.exports = app;
 //   process.env.GOOGLE_CLIENT_SECRET,
 //   process.env.GOOGLE_REDIRECT_URI
 // );
+
+// const { employeeIds, teams } = require("../utils/data/companyData");
+
+// // Scopes for Google Contacts API
 // const SCOPES = ["https://www.googleapis.com/auth/contacts.readonly"];
 
-// // Function to load tokens from the file
+// // Helper function to load tokens from the file
 // const loadTokens = () => {
-//   if (fs.existsSync(tokensPath)) {
-//     const tokens = fs.readFileSync(tokensPath);
-//     return JSON.parse(tokens);
+//   try {
+//     if (fs.existsSync(tokensPath)) {
+//       const tokens = fs.readFileSync(tokensPath, "utf8");
+//       console.log("Tokens loaded from file:", tokens);
+//       return JSON.parse(tokens);
+//     }
+//     console.log("No tokens file found.");
+//   } catch (error) {
+//     console.error("Error loading tokens:", error);
 //   }
 //   return null;
 // };
 
-// // Function to save tokens to the file
+// // Helper function to save tokens to the file
 // const saveTokens = (tokens) => {
-//   fs.writeFileSync(tokensPath, JSON.stringify(tokens));
-//   console.log("Tokens saved to file:", tokens);
+//   try {
+//     fs.writeFileSync(tokensPath, JSON.stringify(tokens), "utf8");
+//     console.log("Tokens saved to file.");
+//   } catch (error) {
+//     console.error("Error saving tokens:", error);
+//   }
 // };
 
-// // Google Cloud Console - Token setup
+// // Load tokens on startup
+// let googleTokens = loadTokens();
+// if (googleTokens) {
+//   oauth2Client.setCredentials(googleTokens);
+// }
+
+// // Google OAuth2 authentication
 // app.get("/auth", (req, res) => {
 //   const authUrl = oauth2Client.generateAuthUrl({
 //     access_type: "offline",
@@ -395,25 +414,22 @@ module.exports = app;
 //   oauth2Client.getToken(code, (err, tokens) => {
 //     if (err) return res.send("Error retrieving access token");
 
-//     // Store the tokens in the JSON file
+//     // Store the tokens
 //     googleTokens = tokens;
 //     oauth2Client.setCredentials(tokens);
-//     saveTokens(tokens); // Save tokens to file
-//     console.log("Tokens received and set:", tokens);
+//     saveTokens(tokens);
 
 //     // Automatically refresh tokens when needed
 //     oauth2Client.on("tokens", (newTokens) => {
-//       saveTokens({ ...googleTokens, ...newTokens });
+//       googleTokens = { ...googleTokens, ...newTokens };
+//       saveTokens(googleTokens);
 //     });
 
 //     res.send("Authentication successful! You can close this tab.");
 //   });
 // });
 
-// // Data
-// const { employeeIds, teams } = require("../utils/data/companyData");
-
-// // Helper function for making HTTPS requests
+// // Helper function to make API requests
 // const makeApiRequest = (options, postData = null) => {
 //   return new Promise((resolve, reject) => {
 //     const req = https.request(options, (res) => {
@@ -445,7 +461,7 @@ module.exports = app;
 //   });
 // };
 
-// // Helper function to normalize phone numbers to +10000000000 format
+// // Helper function to normalize phone numbers
 // const normalizePhoneNumber = (phone) => {
 //   let normalized = phone.replace(/[^\d]/g, ""); // Remove non-digit characters
 //   if (normalized.length === 10) {
@@ -463,7 +479,7 @@ module.exports = app;
 //     return {};
 //   }
 
-//   oauth2Client.setCredentials(googleTokens); // Ensure OAuth2 client is using the tokens
+//   oauth2Client.setCredentials(googleTokens);
 
 //   const service = google.people({ version: "v1", auth: oauth2Client });
 //   try {
@@ -475,24 +491,23 @@ module.exports = app;
 //     const connections = response.data.connections || [];
 //     const contacts = {};
 
-//     // Create a lookup for phone numbers and their associated contact names
 //     connections.forEach((person) => {
 //       const name = person.names ? person.names[0].displayName : null;
 //       const phoneNumbers = person.phoneNumbers || [];
 //       phoneNumbers.forEach((phone) => {
-//         const formattedPhoneNumber = normalizePhoneNumber(phone.value); // Normalize the phone number
+//         const formattedPhoneNumber = normalizePhoneNumber(phone.value);
 //         contacts[formattedPhoneNumber] = name;
 //       });
 //     });
 
 //     return contacts;
 //   } catch (error) {
-//     console.error("Error fetching contacts", error);
+//     console.error("Error fetching contacts:", error);
 //     return {};
 //   }
 // };
 
-// // Helper function for formatting date to Pacific Time
+// // Helper function to format dates to Pacific Time
 // const formatDateToPacific = (dateString) => {
 //   const utcDate = new Date(dateString);
 //   const pacificOffset = -7; // Adjust this value if needed
@@ -529,12 +544,12 @@ module.exports = app;
 //   };
 // };
 
-// // Root GET route to prevent 'Cannot GET /' error
+// // Root GET route
 // app.get("/", (req, res) => {
 //   res.send("Server is running.");
 // });
 
-// // Webhook endpoint to handle both voicemails and texts
+// // Webhook endpoint to handle voicemails and texts
 // app.post("/webhook", async (req, res) => {
 //   const eventData = req.body;
 //   console.log("Incoming event data:", eventData);
@@ -575,7 +590,6 @@ module.exports = app;
 //     taskDescription = `New Voicemail\nFrom: ${callerName}\nTo: ${teamInfo.teamName}\nTime: ${time}\n${body}`;
 
 //     assignees = teamInfo.employees.map((emp) => emp.userId); // Get user IDs for assignees
-//     console.log(assignees);
 
 //     const taskData = JSON.stringify({
 //       name: taskName,
@@ -584,7 +598,6 @@ module.exports = app;
 //       priority: 2,
 //       assignees: assignees,
 //     });
-//     console.log(taskData);
 
 //     const options = {
 //       hostname: "api.clickup.com",
@@ -629,7 +642,6 @@ module.exports = app;
 //       priority: 2,
 //       assignees: assignees,
 //     });
-//     console.log(taskData);
 
 //     const options = {
 //       hostname: "api.clickup.com",
