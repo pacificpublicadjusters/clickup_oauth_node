@@ -58,27 +58,27 @@ const teams = [
   },
   {
     number: "+12062222708",
-    team: "Primary - Clint Wooley",
+    team: "Clint Wooley",
     employeeIds: [50510480], // Clint Wooley
   },
   {
     number: "+15092603923",
-    team: "Primary - John Paul Fernandez",
+    team: "John Paul Fernandez",
     employeeIds: [90173870], // JohnPaul
   },
   {
     number: "+13603024068",
-    team: "Primary - Amanda Collins",
+    team: "Amanda Collins",
     employeeIds: [50510498], // Amanda Collins
   },
   {
     number: "+13605486904",
-    team: "Primary - Mark Stockwell",
+    team: "Mark Stockwell",
     employeeIds: [75363521], // Mark Stockwell
   },
   {
     number: "+16232541114",
-    team: "Primary - Tom Glenn",
+    team: "Tom Glenn",
     employeeIds: [75481452], // Tom Glenn
   },
   {
@@ -147,18 +147,18 @@ module.exports = { employeeIds, teams };
 //     employeeIds: [3, 4, 10, 6, 9],
 //   },
 //   {
-//     team: "Primary - Amanda Collins",
+//     team: "Amanda Collins",
 //     number: "+13603024068",
 //     employeeIds: [50510498],
 //   },
-//   { team: "Primary - Clint Wooley", number: "+12062222708", employeeIds: [5] },
+//   { team: "Clint Wooley", number: "+12062222708", employeeIds: [5] },
 //   {
-//     team: "Primary - John Paul Fernandez",
+//     team: "John Paul Fernandez",
 //     number: "+15092603923",
 //     employeeIds: [6],
 //   },
 //   {
-//     team: "Primary - Mark Stockwell",
+//     team: "Mark Stockwell",
 //     number: "+13605486904",
 //     employeeIds: [6],
 //   },
