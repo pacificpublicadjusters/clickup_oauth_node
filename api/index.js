@@ -23,7 +23,7 @@ const oauth2Client = new OAuth2(
 const SCOPES = ["https://www.googleapis.com/auth/contacts.readonly"];
 
 // Token storage file path
-const TOKEN_PATH = "./googleTokens.json";
+const TOKEN_PATH = "../googleTokens.json";
 
 // Load tokens from file (if they exist)
 const loadTokens = () => {
