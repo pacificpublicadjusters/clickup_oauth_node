@@ -56,6 +56,41 @@ app.get("/oauth2callback", (req, res) => {
   });
 });
 
+// Data
+const { employeeIds, teams } = require("../utils/data/companyData");
+
+// Helper function for making HTTPS requests
+const makeApiRequest = (options, postData = null) => {
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let data = "";
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => {
+        try {
+          const parsedData = JSON.parse(data);
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            reject(
+              new Error(
+                `API responded with status ${res.statusCode}: ${
+                  parsedData.message || "Unknown error"
+                }`
+              )
+            );
+          } else {
+            resolve(parsedData);
+          }
+        } catch (err) {
+          reject(new Error("Failed to parse API response"));
+        }
+      });
+    });
+
+    req.on("error", (error) => reject(error));
+    if (postData) req.write(postData);
+    req.end();
+  });
+};
+
 // Helper function to normalize phone numbers to +10000000000 format
 const normalizePhoneNumber = (phone) => {
   let normalized = phone.replace(/[^\d]/g, ""); // Remove non-digit characters
@@ -103,6 +138,48 @@ const getGoogleContacts = async () => {
   }
 };
 
+// Helper function for formatting date to Pacific Time
+const formatDateToPacific = (dateString) => {
+  const utcDate = new Date(dateString);
+  const pacificOffset = -7; // Adjust this value if needed
+  const pacificDate = new Date(
+    utcDate.getTime() + pacificOffset * 60 * 60 * 1000
+  );
+  return pacificDate.toLocaleString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short",
+  });
+};
+
+// Function to gather team details based on "to" number
+const getTeamInfoByNumber = (toNumber) => {
+  const team = teams.find((team) => team.number === toNumber);
+  if (!team) return null;
+
+  // Gather employee info based on employeeIds from the team
+  const teamEmployees = team.employeeIds
+    .map((id) => {
+      const employee = employeeIds.find((emp) => emp.id === id);
+      return employee ? { name: employee.name, userId: employee.id } : null;
+    })
+    .filter((emp) => emp !== null);
+
+  return {
+    teamName: team.team,
+    employees: teamEmployees,
+  };
+};
+
+// Root GET route to prevent 'Cannot GET /' error
+app.get("/", (req, res) => {
+  res.send("Server is running.");
+});
+
 // Webhook endpoint to handle both voicemails and texts
 app.post("/webhook", async (req, res) => {
   const eventData = req.body;
@@ -117,14 +194,13 @@ app.post("/webhook", async (req, res) => {
   // Extract common data
   const callerNumber = normalizePhoneNumber(eventDataObject.from); // Clean and normalize caller number
   const numberDialed = eventDataObject.to;
-  const time = new Date(eventDataObject.createdAt).toLocaleString();
+  const time = formatDateToPacific(eventDataObject.createdAt);
 
   // Try to find caller name from Google Contacts
   const callerName = googleContacts[callerNumber] || callerNumber;
 
   // Get team info for the "to" phone number
-  const teamInfo = getTeamInfoByNumber(numberDialed); // Function not included here for brevity
-
+  const teamInfo = getTeamInfoByNumber(numberDialed);
   if (!teamInfo) {
     console.error("No team found for this phone number:", numberDialed);
     return res
@@ -177,6 +253,7 @@ app.post("/webhook", async (req, res) => {
   } else if (eventType === "message.received") {
     const messageContent = eventDataObject.body || "No message body.";
 
+    // If media is included, append links to it
     let mediaInfo = "";
     if (eventDataObject.media && eventDataObject.media.length > 0) {
       const mediaLinks = eventDataObject.media
