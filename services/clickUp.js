@@ -1,14 +1,15 @@
 const https = require("https");
 const { ACCESS_TOKEN } = process.env;
 
-// Function to create a task in ClickUp
 async function createTask(taskData) {
+  console.log("Creating task with data:", taskData); // Add logging here to debug task data
+
   const options = {
     hostname: "api.clickup.com",
-    path: `/api/v2/list/${taskData.list_id}/task`,
+    path: `/api/v2/list/${taskData.list_id}/task`, // Ensure list_id is part of taskData
     method: "POST",
     headers: {
-      Authorization: ACCESS_TOKEN,
+      Authorization: ACCESS_TOKEN, // Ensure the access token is set correctly
       "Content-Type": "application/json",
     },
   };
@@ -21,29 +22,28 @@ async function createTask(taskData) {
       });
 
       res.on("end", () => {
+        console.log("Response from ClickUp:", data); // Add logging for the response
         try {
-          // Check if the response is JSON before parsing
-          if (
-            res.headers["content-type"] &&
-            res.headers["content-type"].includes("application/json")
-          ) {
-            const parsedData = JSON.parse(data);
-            resolve(parsedData);
+          const parsedData = JSON.parse(data);
+          if (res.statusCode >= 400) {
+            console.error("ClickUp API error:", parsedData);
+            reject(new Error(`ClickUp API error: ${parsedData.err}`));
           } else {
-            reject(new Error("Unexpected response format. Expected JSON."));
+            resolve(parsedData);
           }
         } catch (error) {
-          reject(new Error("Failed to parse API response: " + error.message));
+          console.error("Failed to parse ClickUp API response:", data);
+          reject(new Error("Failed to parse ClickUp API response"));
         }
       });
     });
 
     req.on("error", (error) => {
-      console.error("Error creating task: ", error);
+      console.error("Error making request to ClickUp:", error);
       reject(error);
     });
 
-    req.write(JSON.stringify(taskData));
+    req.write(JSON.stringify(taskData)); // Ensure the correct task data is being sent
     req.end();
   });
 }
