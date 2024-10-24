@@ -9,11 +9,9 @@ app.use(express.json());
 // Root route to avoid "cannot GET /"
 app.get("/", (req, res) => res.send("Server is running!"));
 
-// Import Routes
+// Webhook route - this is the main route that OpenPhone will hit
 const openPhoneWebhook = require("./routes/openPhoneWebhook");
-
-// Use Routes
-app.use("/api", openPhoneWebhook);
+app.use("/webhook", openPhoneWebhook);
 
 // Port listener
 const PORT = process.env.PORT || 3000;

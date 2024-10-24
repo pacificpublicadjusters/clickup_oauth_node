@@ -2,11 +2,12 @@ const express = require("express");
 const router = express.Router();
 const { handleVoicemail, handleText } = require("../services/openPhoneService");
 
-// Webhook route to handle incoming data from OpenPhone
-router.post("/webhook", async (req, res) => {
+// Handle POST requests to the /webhook route
+router.post("/", async (req, res) => {
   try {
     const { type, data } = req.body;
 
+    // Check if the event is a voicemail or a text message
     if (type === "call.completed") {
       const { object } = data;
       if (object.direction === "incoming" && object.voicemail) {
