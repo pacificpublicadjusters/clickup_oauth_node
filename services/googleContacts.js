@@ -16,20 +16,7 @@ function setTokens(accessToken, refreshToken) {
   });
 }
 
-// Function to refresh the access token if needed
-async function refreshAccessToken() {
-  try {
-    const { credentials } = await oauth2Client.refreshAccessToken();
-    oauth2Client.setCredentials(credentials);
-    console.log("Access token refreshed:", credentials.access_token);
-    return credentials;
-  } catch (error) {
-    console.error("Error refreshing access token:", error);
-    throw error;
-  }
-}
-
-// Function to fetch contact name by phone number
+// Fetch contact name by phone number
 async function getContactNameByPhoneNumber(
   phoneNumber,
   accessToken,
@@ -70,5 +57,4 @@ async function getContactNameByPhoneNumber(
 module.exports = {
   getContactNameByPhoneNumber,
   setTokens,
-  refreshAccessToken,
 };

@@ -5,7 +5,7 @@ const { ACCESS_TOKEN } = process.env;
 async function createTask(taskData) {
   const options = {
     hostname: "api.clickup.com",
-    path: "/api/v2/task",
+    path: `/api/v2/list/${taskData.list_id}/task`,
     method: "POST",
     headers: {
       Authorization: ACCESS_TOKEN,
@@ -21,7 +21,20 @@ async function createTask(taskData) {
       });
 
       res.on("end", () => {
-        resolve(JSON.parse(data));
+        try {
+          // Check if the response is JSON before parsing
+          if (
+            res.headers["content-type"] &&
+            res.headers["content-type"].includes("application/json")
+          ) {
+            const parsedData = JSON.parse(data);
+            resolve(parsedData);
+          } else {
+            reject(new Error("Unexpected response format. Expected JSON."));
+          }
+        } catch (error) {
+          reject(new Error("Failed to parse API response: " + error.message));
+        }
       });
     });
 
