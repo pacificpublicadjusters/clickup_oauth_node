@@ -3,7 +3,7 @@ const router = express.Router();
 const { handleVoicemail, handleText } = require("../services/openPhoneService");
 
 // Webhook route to handle incoming data from OpenPhone
-router.post("/", async (req, res) => {
+router.post("/webhook", async (req, res) => {
   try {
     const { type, data } = req.body;
 

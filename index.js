@@ -7,9 +7,7 @@ const app = express();
 app.use(express.json());
 
 // Root route to avoid "cannot GET /"
-app.get("/", (req, res) => {
-  res.send("Server is running!");
-});
+app.get("/", (req, res) => res.send("Server is running!"));
 
 // Import Routes
 const openPhoneWebhook = require("./routes/openPhoneWebhook");
@@ -19,9 +17,7 @@ app.use("/api", openPhoneWebhook);
 
 // Port listener
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
 
 // const express = require("express");
 // const https = require("https");
