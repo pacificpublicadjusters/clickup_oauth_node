@@ -1,28 +1,43 @@
 const { google } = require("googleapis");
 const { OAuth2 } = google.auth;
-const {
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
-  GOOGLE_REDIRECT_URI,
-  GOOGLE_ACCESS_TOKEN,
-  GOOGLE_REFRESH_TOKEN,
-} = process.env;
 
-// OAuth2 Client Setup
+// Initialize OAuth2 Client
 const oauth2Client = new OAuth2(
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
-  GOOGLE_REDIRECT_URI
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI
 );
 
-// Set OAuth2 credentials (access token and refresh token)
-oauth2Client.setCredentials({
-  access_token: GOOGLE_ACCESS_TOKEN,
-  refresh_token: GOOGLE_REFRESH_TOKEN,
-});
+// Function to dynamically set access and refresh tokens
+function setTokens(accessToken, refreshToken) {
+  oauth2Client.setCredentials({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  });
+}
 
-// Fetch contact name by phone number
-async function getContactNameByPhoneNumber(phoneNumber) {
+// Function to refresh the access token if needed
+async function refreshAccessToken() {
+  try {
+    const { credentials } = await oauth2Client.refreshAccessToken();
+    oauth2Client.setCredentials(credentials);
+    console.log("Access token refreshed:", credentials.access_token);
+    return credentials;
+  } catch (error) {
+    console.error("Error refreshing access token:", error);
+    throw error;
+  }
+}
+
+// Function to fetch contact name by phone number
+async function getContactNameByPhoneNumber(
+  phoneNumber,
+  accessToken,
+  refreshToken
+) {
+  // Set the tokens dynamically
+  setTokens(accessToken, refreshToken);
+
   const people = google.people({
     version: "v1",
     auth: oauth2Client,
@@ -38,11 +53,22 @@ async function getContactNameByPhoneNumber(phoneNumber) {
     const contact = response.data.results[0];
     return contact ? contact.names[0].displayName : null;
   } catch (error) {
-    console.error("Error fetching contact: ", error);
+    if (error.response && error.response.status === 401) {
+      console.log("Access token expired. Refreshing token...");
+      const newTokens = await refreshAccessToken();
+      return getContactNameByPhoneNumber(
+        phoneNumber,
+        newTokens.access_token,
+        newTokens.refresh_token
+      );
+    }
+    console.error("Error fetching contact:", error);
     return null;
   }
 }
 
 module.exports = {
   getContactNameByPhoneNumber,
+  setTokens,
+  refreshAccessToken,
 };
