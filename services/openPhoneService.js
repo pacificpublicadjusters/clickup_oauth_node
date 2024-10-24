@@ -1,19 +1,13 @@
 const { createTask } = require("./clickUp");
-const { getContactNameByPhoneNumber } = require("./googleContacts");
 const { TEXT_LIST_ID, VOICEMAIL_LIST_ID } = process.env;
 
 // Handle incoming voicemail events
 async function handleVoicemail(voicemailData) {
-  const { from, voicemail, createdAt, to, conversationId } = voicemailData;
-  const contactName = await getContactNameByPhoneNumber(from);
+  const { from, voicemail, createdAt, to } = voicemailData;
   const time = new Date(createdAt).toLocaleString("en-US", { timeZone: "UTC" });
 
   const taskName = `New Voicemail to ${to}`;
-  const taskDescription = `New Voicemail\nFrom: ${
-    contactName || from
-  }\nTo: ${to}\nTime: ${time}\nVoicemail link: ${voicemail.url} (Duration: ${
-    voicemail.duration
-  }s)`;
+  const taskDescription = `New Voicemail\nFrom: ${from}\nTo: ${to}\nTime: ${time}\nVoicemail link: ${voicemail.url} (Duration: ${voicemail.duration}s)`;
 
   const taskDetails = {
     name: taskName,
@@ -21,19 +15,17 @@ async function handleVoicemail(voicemailData) {
     list_id: VOICEMAIL_LIST_ID, // Ensure the voicemail list ID is being set here
   };
 
+  console.log("Creating task with data:", taskDetails); // Add logging to debug
   await createTask(taskDetails);
 }
 
 // Handle incoming text message events
 async function handleText(messageData) {
-  const { from, body, media, createdAt, to, conversationId } = messageData;
-  const contactName = await getContactNameByPhoneNumber(from);
+  const { from, body, media, createdAt, to } = messageData;
   const time = new Date(createdAt).toLocaleString("en-US", { timeZone: "UTC" });
 
   const taskName = `New Text to ${to}`;
-  let taskDescription = `New Text\nFrom: ${
-    contactName || from
-  }\nTo: ${to}\nTime: ${time}\nMessage: ${body}`;
+  let taskDescription = `New Text\nFrom: ${from}\nTo: ${to}\nTime: ${time}\nMessage: ${body}`;
 
   if (media && media.length > 0) {
     const mediaLinks = media
@@ -48,6 +40,7 @@ async function handleText(messageData) {
     list_id: TEXT_LIST_ID, // Ensure the text list ID is being set here
   };
 
+  console.log("Creating task with data:", taskDetails); // Add logging to debug
   await createTask(taskDetails);
 }
 
