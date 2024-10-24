@@ -1,7 +1,12 @@
 const { google } = require("googleapis");
 const { OAuth2 } = google.auth;
-const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } =
-  process.env;
+const {
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+  GOOGLE_REDIRECT_URI,
+  GOOGLE_ACCESS_TOKEN,
+  GOOGLE_REFRESH_TOKEN,
+} = process.env;
 
 // OAuth2 Client Setup
 const oauth2Client = new OAuth2(
@@ -10,10 +15,14 @@ const oauth2Client = new OAuth2(
   GOOGLE_REDIRECT_URI
 );
 
+// Set OAuth2 credentials (access token and refresh token)
+oauth2Client.setCredentials({
+  access_token: GOOGLE_ACCESS_TOKEN,
+  refresh_token: GOOGLE_REFRESH_TOKEN,
+});
+
 // Fetch contact name by phone number
 async function getContactNameByPhoneNumber(phoneNumber) {
-  // Token setup here (retrieving from ENV or dynamic logic)
-
   const people = google.people({
     version: "v1",
     auth: oauth2Client,
