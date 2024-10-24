@@ -1,17 +1,7 @@
 const { createTask } = require("./clickUp");
 const { TEXT_LIST_ID, VOICEMAIL_LIST_ID } = process.env;
 const { employeeIds, teams } = require("../utils/data/companyData");
-
-// Helper function to normalize phone numbers to +10000000000 format
-const normalizePhoneNumber = (phone) => {
-  let normalized = phone.replace(/[^\d]/g, ""); // Remove non-digit characters
-  if (normalized.length === 10) {
-    normalized = `+1${normalized}`; // Assuming US country code
-  } else if (!normalized.startsWith("+")) {
-    normalized = `+${normalized}`;
-  }
-  return normalized;
-};
+const { normalizePhoneNumber } = require("../utils/helpers");
 
 // Helper function to get team info by phone number (cross-reference)
 const getTeamInfoByNumber = (toNumber) => {
