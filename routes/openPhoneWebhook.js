@@ -24,8 +24,8 @@ router.post("/", async (req, res) => {
 
     return res.status(400).send("Unhandled event type or direction");
   } catch (error) {
-    console.error("Error processing OpenPhone event: ", error);
-    res.status(500).send("Internal server error");
+    console.error("Error processing OpenPhone event:", error); // Log the error
+    res.status(500).send("Internal server error"); // Send 500 status on failure
   }
 });
 
