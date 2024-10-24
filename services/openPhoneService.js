@@ -1,21 +1,62 @@
 const { createTask } = require("./clickUp");
 const { TEXT_LIST_ID, VOICEMAIL_LIST_ID } = process.env;
+const { employeeIds, teams } = require("../utils/data/companyData");
+
+// Helper function to normalize phone numbers to +10000000000 format
+const normalizePhoneNumber = (phone) => {
+  let normalized = phone.replace(/[^\d]/g, ""); // Remove non-digit characters
+  if (normalized.length === 10) {
+    normalized = `+1${normalized}`; // Assuming US country code
+  } else if (!normalized.startsWith("+")) {
+    normalized = `+${normalized}`;
+  }
+  return normalized;
+};
+
+// Helper function to get team info by phone number (cross-reference)
+const getTeamInfoByNumber = (toNumber) => {
+  const team = teams.find((team) => team.number === toNumber);
+  if (!team) return null;
+
+  const teamEmployees = team.employeeIds
+    .map((id) => {
+      const employee = employeeIds.find((emp) => emp.id === id);
+      return employee ? { name: employee.name, userId: employee.id } : null;
+    })
+    .filter((emp) => emp !== null);
+
+  return {
+    teamName: team.team,
+    employees: teamEmployees,
+  };
+};
 
 // Handle incoming voicemail events
 async function handleVoicemail(voicemailData) {
   const { from, voicemail, createdAt, to } = voicemailData;
   const time = new Date(createdAt).toLocaleString("en-US", { timeZone: "UTC" });
 
-  const taskName = `New Voicemail to ${to}`;
-  const taskDescription = `New Voicemail\nFrom: ${from}\nTo: ${to}\nTime: ${time}\nVoicemail link: ${voicemail.url} (Duration: ${voicemail.duration}s)`;
+  const normalizedTo = normalizePhoneNumber(to);
+  const teamInfo = getTeamInfoByNumber(normalizedTo);
+
+  if (!teamInfo) {
+    console.error("No team found for this phone number:", to);
+    return;
+  }
+
+  const taskName = `New Voicemail to ${teamInfo.teamName}`;
+  const taskDescription = `New Voicemail\nFrom: ${from}\nTo: ${teamInfo.teamName}\nTime: ${time}\nVoicemail link: ${voicemail.url} (Duration: ${voicemail.duration}s)`;
+
+  const assignees = teamInfo.employees.map((emp) => emp.userId);
 
   const taskDetails = {
     name: taskName,
     description: taskDescription,
-    list_id: VOICEMAIL_LIST_ID, // Ensure the voicemail list ID is being set here
+    list_id: VOICEMAIL_LIST_ID,
+    assignees,
   };
 
-  console.log("Creating task with data:", taskDetails); // Add logging to debug
+  console.log("Creating task with data:", taskDetails);
   await createTask(taskDetails);
 }
 
@@ -24,8 +65,16 @@ async function handleText(messageData) {
   const { from, body, media, createdAt, to } = messageData;
   const time = new Date(createdAt).toLocaleString("en-US", { timeZone: "UTC" });
 
-  const taskName = `New Text to ${to}`;
-  let taskDescription = `New Text\nFrom: ${from}\nTo: ${to}\nTime: ${time}\nMessage: ${body}`;
+  const normalizedTo = normalizePhoneNumber(to);
+  const teamInfo = getTeamInfoByNumber(normalizedTo);
+
+  if (!teamInfo) {
+    console.error("No team found for this phone number:", to);
+    return;
+  }
+
+  const taskName = `New Text to ${teamInfo.teamName}`;
+  let taskDescription = `New Text\nFrom: ${from}\nTo: ${teamInfo.teamName}\nTime: ${time}\nMessage: ${body}`;
 
   if (media && media.length > 0) {
     const mediaLinks = media
@@ -34,13 +83,16 @@ async function handleText(messageData) {
     taskDescription += `\nAttached media:\n${mediaLinks}`;
   }
 
+  const assignees = teamInfo.employees.map((emp) => emp.userId);
+
   const taskDetails = {
     name: taskName,
     description: taskDescription,
-    list_id: TEXT_LIST_ID, // Ensure the text list ID is being set here
+    list_id: TEXT_LIST_ID,
+    assignees,
   };
 
-  console.log("Creating task with data:", taskDetails); // Add logging to debug
+  console.log("Creating task with data:", taskDetails);
   await createTask(taskDetails);
 }
 
@@ -50,65 +102,34 @@ module.exports = {
 };
 
 // const { createTask } = require("./clickUp");
-// const { getContactNameByPhoneNumber } = require("./googleContacts");
 // const { TEXT_LIST_ID, VOICEMAIL_LIST_ID } = process.env;
-
-// // Helper function to format Pacific Time
-// function formatDateToPacific(dateString) {
-//   const utcDate = new Date(dateString);
-//   const pacificOffset = -7; // Adjust this value if needed
-//   const pacificDate = new Date(
-//     utcDate.getTime() + pacificOffset * 60 * 60 * 1000
-//   );
-//   return pacificDate.toLocaleString("en-US", {
-//     year: "numeric",
-//     month: "long",
-//     day: "numeric",
-//     hour: "2-digit",
-//     minute: "2-digit",
-//     second: "2-digit",
-//     timeZoneName: "short",
-//   });
-// }
 
 // // Handle incoming voicemail events
 // async function handleVoicemail(voicemailData) {
-//   const { from, voicemail, createdAt, to, conversationId } = voicemailData;
+//   const { from, voicemail, createdAt, to } = voicemailData;
+//   const time = new Date(createdAt).toLocaleString("en-US", { timeZone: "UTC" });
 
-//   const contactName = await getContactNameByPhoneNumber(from);
-//   const time = formatDateToPacific(createdAt);
-
-//   // Format task name and description as per original structure
 //   const taskName = `New Voicemail to ${to}`;
-//   const taskDescription = `New Voicemail\nFrom: ${
-//     contactName || from
-//   }\nTo: ${to}\nTime: ${time}\nVoicemail link: ${voicemail.url} (Duration: ${
-//     voicemail.duration
-//   }s)`;
+//   const taskDescription = `New Voicemail\nFrom: ${from}\nTo: ${to}\nTime: ${time}\nVoicemail link: ${voicemail.url} (Duration: ${voicemail.duration}s)`;
 
 //   const taskDetails = {
 //     name: taskName,
 //     description: taskDescription,
-//     list_id: VOICEMAIL_LIST_ID,
+//     list_id: VOICEMAIL_LIST_ID, // Ensure the voicemail list ID is being set here
 //   };
 
+//   console.log("Creating task with data:", taskDetails); // Add logging to debug
 //   await createTask(taskDetails);
 // }
 
 // // Handle incoming text message events
 // async function handleText(messageData) {
-//   const { from, body, media, createdAt, to, conversationId } = messageData;
+//   const { from, body, media, createdAt, to } = messageData;
+//   const time = new Date(createdAt).toLocaleString("en-US", { timeZone: "UTC" });
 
-//   const contactName = await getContactNameByPhoneNumber(from);
-//   const time = formatDateToPacific(createdAt);
-
-//   // Format task name and description as per original structure
 //   const taskName = `New Text to ${to}`;
-//   let taskDescription = `New Text\nFrom: ${
-//     contactName || from
-//   }\nTo: ${to}\nTime: ${time}\nMessage: ${body}`;
+//   let taskDescription = `New Text\nFrom: ${from}\nTo: ${to}\nTime: ${time}\nMessage: ${body}`;
 
-//   // If media is present, include it in the task description
 //   if (media && media.length > 0) {
 //     const mediaLinks = media
 //       .map((item) => `Media URL: ${item.url} (Type: ${item.type})`)
@@ -119,9 +140,10 @@ module.exports = {
 //   const taskDetails = {
 //     name: taskName,
 //     description: taskDescription,
-//     list_id: TEXT_LIST_ID,
+//     list_id: TEXT_LIST_ID, // Ensure the text list ID is being set here
 //   };
 
+//   console.log("Creating task with data:", taskDetails); // Add logging to debug
 //   await createTask(taskDetails);
 // }
 
